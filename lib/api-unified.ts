@@ -113,6 +113,19 @@ class ApiClient {
 
     return response.json()
   }
+
+  async put<T>(endpoint: string, data: any): Promise<T> {
+    const response = await this.makeRequest(endpoint, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+      throw new Error(errorData.error || `Failed to PUT: ${response.status}`)
+    }
+    return response.json()
+  }
 }
 
 // 文章相关 API
@@ -268,6 +281,11 @@ export class ArticleApi {
 
     // Then close the issue
     return this.updateArticle(number, { state: "closed" })
+  }
+
+  async setArticleLabels(number: string | number, labels: string[]): Promise<any> {
+    // This calls the Next.js backend route, which then calls the Gitea API
+    return this.client.put<any>(`/api/articles/${number}/labels`, { labels })
   }
 }
 

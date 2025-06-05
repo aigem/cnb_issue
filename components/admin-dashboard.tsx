@@ -16,6 +16,9 @@ import { articleApi, tagApi } from "@/lib/api-unified"
 import { isApiConfigured } from "@/lib/api"
 import Link from "next/link"
 
+type PriorityLabel = "P0" | "P1" | "P2" | "P3"
+const PRIORITY_LABELS: PriorityLabel[] = ["P0", "P1", "P2", "P3"]
+
 export default function AdminDashboard() {
   const [publishedArticles, setPublishedArticles] = useState([])
   const [draftArticles, setDraftArticles] = useState([])
@@ -35,16 +38,25 @@ export default function AdminDashboard() {
     loadData()
   }, [])
 
+  const handlePriorityClick = (priorityLabel: PriorityLabel) => {
+    let currentLabels = newArticle.labels
+      .split(/[\s,]+/) // Changed to regex split
+      .map((l) => l.trim())
+      .filter((l) => l && !PRIORITY_LABELS.includes(l as PriorityLabel)) // Remove existing Px labels
+
+    // Add the new priority label
+    currentLabels.push(priorityLabel)
+
+    setNewArticle({ ...newArticle, labels: currentLabels.filter((l) => l).join(", ") }) // Join with ", " for readability
+  }
+
   const loadData = async () => {
     try {
       if (!isApiConfigured()) {
         setLoading(false)
         return
       }
-
       setLoading(true)
-
-      // Load tags first as they're simpler
       try {
         const tagsData = await tagApi.getTags()
         setTags(tagsData || [])
@@ -52,8 +64,6 @@ export default function AdminDashboard() {
         console.error("Error loading tags:", error)
         setTags([])
       }
-
-      // Try to load articles with error handling for each type
       try {
         const published = await articleApi.getPublishedArticles({ pageSize: 100 })
         setPublishedArticles(published || [])
@@ -61,7 +71,6 @@ export default function AdminDashboard() {
         console.error("Error loading published articles:", error)
         setPublishedArticles([])
       }
-
       try {
         const drafts = await articleApi.getDraftArticles({ pageSize: 100 })
         setDraftArticles(drafts || [])
@@ -69,7 +78,6 @@ export default function AdminDashboard() {
         console.error("Error loading draft articles:", error)
         setDraftArticles([])
       }
-
       try {
         const archived = await articleApi.getArchivedArticles({ pageSize: 100 })
         setArchivedArticles(archived || [])
@@ -91,7 +99,6 @@ export default function AdminDashboard() {
 
   const handleCreateArticle = async (e: React.FormEvent) => {
     e.preventDefault()
-
     if (!newArticle.title.trim() || !newArticle.body.trim()) {
       toast({
         title: "Error",
@@ -100,11 +107,10 @@ export default function AdminDashboard() {
       })
       return
     }
-
     try {
       setIsCreating(true)
       const labels = newArticle.labels
-        .split(",")
+        .split(/[\s,]+/) // Changed to regex split
         .map((l) => l.trim())
         .filter((l) => l.length > 0)
 
@@ -113,10 +119,8 @@ export default function AdminDashboard() {
       } else {
         await articleApi.createArticle(newArticle.title, newArticle.body, labels)
       }
-
       setNewArticle({ title: "", body: "", labels: "", isDraft: true })
       await loadData()
-
       toast({
         title: "Success",
         description: `Article ${newArticle.isDraft ? "draft" : ""} created successfully`,
@@ -132,12 +136,26 @@ export default function AdminDashboard() {
     }
   }
 
-  // Helper function to safely get article excerpt
   const getArticleExcerpt = (article) => {
     if (!article || !article.body) return "No content available"
     return typeof article.body === "string"
       ? article.body.substring(0, 100) + "..."
       : "Content not available in text format"
+  }
+
+  const renderPriorityBadge = (labelName: string) => {
+    if (!PRIORITY_LABELS.includes(labelName as PriorityLabel)) return null
+
+    const priorityColors: Record<PriorityLabel, string> = {
+      P0: "hsl(var(--destructive))", // Red
+      P1: "hsl(var(--primary))", // Using primary for P1 (e.g. Orange/Amber)
+      P2: "hsl(var(--primary) / 0.7)", // Lighter primary for P2 (e.g. Yellow)
+      P3: "hsl(var(--muted-foreground))", // Muted for P3 (e.g. Blue/Gray)
+    }
+    return {
+      backgroundColor: priorityColors[labelName as PriorityLabel],
+      color: "hsl(var(--destructive-foreground))", // White/light text for contrast
+    }
   }
 
   if (!isApiConfigured()) {
@@ -167,7 +185,6 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold">{publishedArticles.length}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Draft Articles</CardTitle>
@@ -177,7 +194,6 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold">{draftArticles.length}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Archived Articles</CardTitle>
@@ -187,7 +203,6 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold">{archivedArticles.length}</div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Tags</CardTitle>
@@ -217,17 +232,36 @@ export default function AdminDashboard() {
                 placeholder="Enter article title..."
               />
             </div>
-
             <div>
-              <Label htmlFor="labels">Tags (comma-separated)</Label>
+              <Label htmlFor="labels">Tags (space or comma-separated)</Label>
               <Input
                 id="labels"
                 value={newArticle.labels}
                 onChange={(e) => setNewArticle({ ...newArticle, labels: e.target.value })}
-                placeholder="nextjs, react, tutorial"
+                placeholder="nextjs react P0 P1"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {PRIORITY_LABELS.map((priority) => (
+                  <Button
+                    key={priority}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePriorityClick(priority)}
+                    className={
+                      newArticle.labels.split(/[\s,]+/).map(l => l.trim()).includes(priority) // Regex split for checking active
+                        ? "border-primary text-primary ring-2 ring-primary" // Highlight if active
+                        : ""
+                    }
+                  >
+                    {priority}
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Use P0, P1, P2, or P3 for priority. Only one can be active.
+              </p>
             </div>
-
             <div>
               <Label htmlFor="body">Content (Markdown)</Label>
               <Textarea
@@ -238,7 +272,6 @@ export default function AdminDashboard() {
                 className="min-h-[200px]"
               />
             </div>
-
             <div className="flex items-center space-x-2">
               <input
                 type="checkbox"
@@ -249,7 +282,6 @@ export default function AdminDashboard() {
               />
               <Label htmlFor="isDraft">Save as draft</Label>
             </div>
-
             <Button type="submit" disabled={isCreating}>
               {isCreating ? "Creating..." : "Create Article"}
             </Button>
@@ -264,134 +296,67 @@ export default function AdminDashboard() {
           <TabsTrigger value="archived">Archived ({archivedArticles.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="published">
-          <Card>
-            <CardHeader>
-              <CardTitle>Published Articles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {publishedArticles.length === 0 ? (
-                  <p className="text-muted-foreground">No published articles found.</p>
-                ) : (
-                  publishedArticles.map((article) => (
-                    <div
-                      key={article?.id || `article-${Math.random()}`}
-                      className="flex justify-between items-start p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium">
-                          <Link href={`/articles/${article?.number}`} className="hover:underline">
-                            {article?.title || "Untitled Article"}
-                          </Link>
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
-                        <div className="flex gap-2 mt-2">
-                          {article?.labels?.slice(0, 3).map((label) => (
-                            <Badge
-                              key={label?.id || `label-${Math.random()}`}
-                              variant="outline"
-                              style={{ borderColor: `#${label?.color || "888888"}` }}
+        {[publishedArticles, draftArticles, archivedArticles].map((articleSet, index) => (
+          <TabsContent
+            key={["published", "drafts", "archived"][index]}
+            value={["published", "drafts", "archived"][index]}
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {["Published Articles", "Draft Articles", "Archived Articles"][index]}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {articleSet.length === 0 ? (
+                    <p className="text-muted-foreground">
+                      No {["published", "draft", "archived"][index]} articles found.
+                    </p>
+                  ) : (
+                    articleSet.map((article) => (
+                      <div
+                        key={article?.id || `article-set-${index}-${Math.random()}`}
+                        className="flex justify-between items-start p-4 border rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <h3 className="font-medium">
+                            <Link
+                              href={
+                                index === 0 // Published
+                                  ? `/articles/${article?.number}`
+                                  : `/articles/${article?.number}/preview` // Drafts & Archived
+                              }
+                              className="hover:underline"
                             >
-                              {label?.name || "Unlabeled"}
-                            </Badge>
-                          ))}
+                              {article?.title || "Untitled Article"}
+                            </Link>
+                          </h3>
+                          <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {article?.labels?.slice(0, 5).map((label) => {
+                              const priorityStyle = renderPriorityBadge(label?.name)
+                              return (
+                                <Badge
+                                  key={label?.id || label?.name || `label-item-${Math.random()}`}
+                                  variant={priorityStyle ? "default" : "outline"}
+                                  style={priorityStyle || { borderColor: `#${label?.color || "888888"}` }}
+                                >
+                                  {label?.name || "Unlabeled"}
+                                </Badge>
+                              )
+                            })}
+                          </div>
                         </div>
+                        <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="drafts">
-          <Card>
-            <CardHeader>
-              <CardTitle>Draft Articles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {draftArticles.length === 0 ? (
-                  <p className="text-muted-foreground">No draft articles found.</p>
-                ) : (
-                  draftArticles.map((article) => (
-                    <div
-                      key={article?.id || `draft-${Math.random()}`}
-                      className="flex justify-between items-start p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium">
-                          <Link href={`/articles/${article?.number}/preview`} className="hover:underline">
-                            {article?.title || "Untitled Draft"}
-                          </Link>
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
-                        <div className="flex gap-2 mt-2">
-                          {article?.labels?.slice(0, 3).map((label) => (
-                            <Badge
-                              key={label?.id || `label-${Math.random()}`}
-                              variant="outline"
-                              style={{ borderColor: `#${label?.color || "888888"}` }}
-                            >
-                              {label?.name || "Unlabeled"}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="archived">
-          <Card>
-            <CardHeader>
-              <CardTitle>Archived Articles</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {archivedArticles.length === 0 ? (
-                  <p className="text-muted-foreground">No archived articles found.</p>
-                ) : (
-                  archivedArticles.map((article) => (
-                    <div
-                      key={article?.id || `archived-${Math.random()}`}
-                      className="flex justify-between items-start p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <h3 className="font-medium">
-                          <Link href={`/articles/${article?.number}/preview`} className="hover:underline">
-                            {article?.title || "Untitled Archive"}
-                          </Link>
-                        </h3>
-                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
-                        <div className="flex gap-2 mt-2">
-                          {article?.labels?.slice(0, 3).map((label) => (
-                            <Badge
-                              key={label?.id || `label-${Math.random()}`}
-                              variant="outline"
-                              style={{ borderColor: `#${label?.color || "888888"}` }}
-                            >
-                              {label?.name || "Unlabeled"}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        ))}
       </Tabs>
     </div>
   )

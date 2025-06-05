@@ -5,7 +5,8 @@ import { useParams, notFound } from "next/navigation"
 import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, MessageSquare } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar, MessageSquare, FileEdit, ExternalLink } from "lucide-react" // Added ExternalLink
 import { fetchArticle, fetchArticleComments } from "@/lib/api-client"
 import Link from "next/link"
 import ArticleContent from "@/components/article-content"
@@ -82,6 +83,19 @@ export default function ArticlePage() {
     return notFound()
   }
 
+  let giteaBaseUrl = "";
+  if (process.env.NEXT_PUBLIC_API_BASE_URL) {
+    try {
+      giteaBaseUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin;
+    } catch (e) {
+      console.error("Invalid NEXT_PUBLIC_API_BASE_URL for origin parsing:", process.env.NEXT_PUBLIC_API_BASE_URL);
+      // Fallback might be needed if URL is relative or not a full URL, but origin parsing is generally robust.
+    }
+  }
+  const repoName = process.env.NEXT_PUBLIC_REPO_NAME;
+  const issueUrl = giteaBaseUrl && repoName ? `${giteaBaseUrl}/${repoName}/-/issues/${article.number}` : "#";
+
+
   return (
     <>
       <ReadingProgressBar />
@@ -90,7 +104,7 @@ export default function ArticlePage() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">{article.title}</h1>
 
-          <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground mb-6"> {/* Increased gap for readability */}
             <div className="flex items-center">
               <Avatar className="h-8 w-8 mr-2">
                 <AvatarImage src={article.author.avatar_url || "/placeholder.svg"} alt={article.author.nickname} />
@@ -108,6 +122,16 @@ export default function ArticlePage() {
               <MessageSquare className="mr-1 h-4 w-4" />
               <span>{comments.length} comments</span>
             </div>
+            {issueUrl !== "#" && (
+              <div className="flex items-center"> {/* Added div for consistent alignment */}
+                <Link href={issueUrl} target="_blank" rel="noopener noreferrer" passHref>
+                  <Button variant="outline" size="sm" className="flex items-center text-xs h-auto py-1 px-2"> {/* Smaller button */}
+                    <ExternalLink className="h-3 w-3 mr-1.5" /> {/* Slightly smaller icon */}
+                    View Original
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
@@ -129,15 +153,21 @@ export default function ArticlePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
             {isAdmin && (
-              <div className="mb-6">
+              <div className="mb-6 flex flex-wrap gap-2 items-start">
                 <ArticlePublishing
                   articleNumber={article.number}
                   articleState={article.state}
                   articleLabels={article.labels.map((label) => label.name)}
                 />
+                <Link href={`/admin/articles/${article.number}/edit`} passHref>
+                  <Button variant="outline">
+                    <FileEdit className="h-4 w-4 mr-2" />
+                    Edit Article
+                  </Button>
+                </Link>
               </div>
             )}
-            <ArticleContent content={article.body_html || article.body || ""} />
+            <ArticleContent content={article.body || ""} />
 
             <hr className="my-8" />
 
