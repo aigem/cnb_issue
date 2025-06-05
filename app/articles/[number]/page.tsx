@@ -15,6 +15,7 @@ import ReadingProgressBar from "@/components/reading-progress-bar"
 import type { IssueDetail, IssueComment } from "@/types"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { AlertTriangle, Loader2 } from "lucide-react"
+import ArticlePublishing from "@/components/article-publishing"
 
 export default function ArticlePage() {
   const params = useParams()
@@ -24,6 +25,7 @@ export default function ArticlePage() {
   const [comments, setComments] = useState<IssueComment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string>("")
+  const [isAdmin, setIsAdmin] = useState(true) // TODO: Replace with actual admin check
 
   useEffect(() => {
     async function loadArticleData() {
@@ -126,6 +128,15 @@ export default function ArticlePage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3">
+            {isAdmin && (
+              <div className="mb-6">
+                <ArticlePublishing
+                  articleNumber={article.number}
+                  articleState={article.state}
+                  articleLabels={article.labels.map((label) => label.name)}
+                />
+              </div>
+            )}
             <ArticleContent content={article.body_html || article.body || ""} />
 
             <hr className="my-8" />

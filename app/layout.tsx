@@ -5,6 +5,8 @@ import "./globals.css"
 import Header from "@/components/header"
 import Footer from "@/components/footer"
 import type { Metadata } from "next"
+import { SettingsProvider } from "@/contexts/settings-context"
+import DynamicStyles from "@/components/dynamic-styles"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
     description: "A modern blog website built with Next.js 15",
     images: ["/og-image.png"],
   },
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export default function RootLayout({
@@ -45,13 +47,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-          </div>
-        </ThemeProvider>
+        <SettingsProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <DynamicStyles />
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+            </div>
+          </ThemeProvider>
+        </SettingsProvider>
       </body>
     </html>
   )

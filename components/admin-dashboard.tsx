@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,13 +8,18 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { createArticle, isApiConfigured } from "@/lib/api"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useToast } from "@/hooks/use-toast"
-import { Plus, FileText, Tags, Users, AlertTriangle } from "lucide-react"
+import { Plus, Tags, AlertTriangle, Archive, FileEdit, Send } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { articleApi, tagApi } from "@/lib/api-unified"
+import { isApiConfigured } from "@/lib/api"
+import Link from "next/link"
 
 export default function AdminDashboard() {
-  const [articles, setArticles] = useState([])
+  const [publishedArticles, setPublishedArticles] = useState([])
+  const [draftArticles, setDraftArticles] = useState([])
+  const [archivedArticles, setArchivedArticles] = useState([])
   const [tags, setTags] = useState([])
   const [isCreating, setIsCreating] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -23,6 +27,7 @@ export default function AdminDashboard() {
     title: "",
     body: "",
     labels: "",
+    isDraft: true,
   })
   const { toast } = useToast()
 
@@ -37,16 +42,40 @@ export default function AdminDashboard() {
         return
       }
 
-      const [articlesResponse, tagsResponse] = await Promise.all([fetch("/api/admin/articles"), fetch("/api/tags")])
+      setLoading(true)
 
-      if (articlesResponse.ok) {
-        const articlesData = await articlesResponse.json()
-        setArticles(articlesData)
+      // Load tags first as they're simpler
+      try {
+        const tagsData = await tagApi.getTags()
+        setTags(tagsData || [])
+      } catch (error) {
+        console.error("Error loading tags:", error)
+        setTags([])
       }
 
-      if (tagsResponse.ok) {
-        const tagsData = await tagsResponse.json()
-        setTags(tagsData)
+      // Try to load articles with error handling for each type
+      try {
+        const published = await articleApi.getPublishedArticles({ pageSize: 100 })
+        setPublishedArticles(published || [])
+      } catch (error) {
+        console.error("Error loading published articles:", error)
+        setPublishedArticles([])
+      }
+
+      try {
+        const drafts = await articleApi.getDraftArticles({ pageSize: 100 })
+        setDraftArticles(drafts || [])
+      } catch (error) {
+        console.error("Error loading draft articles:", error)
+        setDraftArticles([])
+      }
+
+      try {
+        const archived = await articleApi.getArchivedArticles({ pageSize: 100 })
+        setArchivedArticles(archived || [])
+      } catch (error) {
+        console.error("Error loading archived articles:", error)
+        setArchivedArticles([])
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error)
@@ -79,14 +108,18 @@ export default function AdminDashboard() {
         .map((l) => l.trim())
         .filter((l) => l.length > 0)
 
-      await createArticle(newArticle.title, newArticle.body, labels)
+      if (newArticle.isDraft) {
+        await articleApi.createDraft(newArticle.title, newArticle.body, labels)
+      } else {
+        await articleApi.createArticle(newArticle.title, newArticle.body, labels)
+      }
 
-      setNewArticle({ title: "", body: "", labels: "" })
+      setNewArticle({ title: "", body: "", labels: "", isDraft: true })
       await loadData()
 
       toast({
         title: "Success",
-        description: "Article created successfully",
+        description: `Article ${newArticle.isDraft ? "draft" : ""} created successfully`,
       })
     } catch (error) {
       toast({
@@ -97,6 +130,14 @@ export default function AdminDashboard() {
     } finally {
       setIsCreating(false)
     }
+  }
+
+  // Helper function to safely get article excerpt
+  const getArticleExcerpt = (article) => {
+    if (!article || !article.body) return "No content available"
+    return typeof article.body === "string"
+      ? article.body.substring(0, 100) + "..."
+      : "Content not available in text format"
   }
 
   if (!isApiConfigured()) {
@@ -116,14 +157,34 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Articles</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Published Articles</CardTitle>
+            <Send className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{articles.length}</div>
+            <div className="text-2xl font-bold">{publishedArticles.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Draft Articles</CardTitle>
+            <FileEdit className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{draftArticles.length}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Archived Articles</CardTitle>
+            <Archive className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{archivedArticles.length}</div>
           </CardContent>
         </Card>
 
@@ -134,18 +195,6 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{tags.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Comments</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {articles.reduce((sum, article) => sum + (article.comments || 0), 0)}
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -190,6 +239,17 @@ export default function AdminDashboard() {
               />
             </div>
 
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isDraft"
+                checked={newArticle.isDraft}
+                onChange={(e) => setNewArticle({ ...newArticle, isDraft: e.target.checked })}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="isDraft">Save as draft</Label>
+            </div>
+
             <Button type="submit" disabled={isCreating}>
               {isCreating ? "Creating..." : "Create Article"}
             </Button>
@@ -197,35 +257,142 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Articles</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {articles.length === 0 ? (
-              <p className="text-muted-foreground">No articles found. Create your first article above!</p>
-            ) : (
-              articles.slice(0, 10).map((article) => (
-                <div key={article.id} className="flex justify-between items-start p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h3 className="font-medium">{article.title}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">{article.body.substring(0, 100)}...</p>
-                    <div className="flex gap-2 mt-2">
-                      {article.labels?.slice(0, 3).map((label) => (
-                        <Badge key={label.id} variant="outline" style={{ borderColor: `#${label.color}` }}>
-                          {label.name}
-                        </Badge>
-                      ))}
+      <Tabs defaultValue="published">
+        <TabsList>
+          <TabsTrigger value="published">Published ({publishedArticles.length})</TabsTrigger>
+          <TabsTrigger value="drafts">Drafts ({draftArticles.length})</TabsTrigger>
+          <TabsTrigger value="archived">Archived ({archivedArticles.length})</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="published">
+          <Card>
+            <CardHeader>
+              <CardTitle>Published Articles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {publishedArticles.length === 0 ? (
+                  <p className="text-muted-foreground">No published articles found.</p>
+                ) : (
+                  publishedArticles.map((article) => (
+                    <div
+                      key={article?.id || `article-${Math.random()}`}
+                      className="flex justify-between items-start p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          <Link href={`/articles/${article?.number}`} className="hover:underline">
+                            {article?.title || "Untitled Article"}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
+                        <div className="flex gap-2 mt-2">
+                          {article?.labels?.slice(0, 3).map((label) => (
+                            <Badge
+                              key={label?.id || `label-${Math.random()}`}
+                              variant="outline"
+                              style={{ borderColor: `#${label?.color || "888888"}` }}
+                            >
+                              {label?.name || "Unlabeled"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
                     </div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">#{article.number}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="drafts">
+          <Card>
+            <CardHeader>
+              <CardTitle>Draft Articles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {draftArticles.length === 0 ? (
+                  <p className="text-muted-foreground">No draft articles found.</p>
+                ) : (
+                  draftArticles.map((article) => (
+                    <div
+                      key={article?.id || `draft-${Math.random()}`}
+                      className="flex justify-between items-start p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          <Link href={`/articles/${article?.number}/preview`} className="hover:underline">
+                            {article?.title || "Untitled Draft"}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
+                        <div className="flex gap-2 mt-2">
+                          {article?.labels?.slice(0, 3).map((label) => (
+                            <Badge
+                              key={label?.id || `label-${Math.random()}`}
+                              variant="outline"
+                              style={{ borderColor: `#${label?.color || "888888"}` }}
+                            >
+                              {label?.name || "Unlabeled"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="archived">
+          <Card>
+            <CardHeader>
+              <CardTitle>Archived Articles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {archivedArticles.length === 0 ? (
+                  <p className="text-muted-foreground">No archived articles found.</p>
+                ) : (
+                  archivedArticles.map((article) => (
+                    <div
+                      key={article?.id || `archived-${Math.random()}`}
+                      className="flex justify-between items-start p-4 border rounded-lg"
+                    >
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          <Link href={`/articles/${article?.number}/preview`} className="hover:underline">
+                            {article?.title || "Untitled Archive"}
+                          </Link>
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1">{getArticleExcerpt(article)}</p>
+                        <div className="flex gap-2 mt-2">
+                          {article?.labels?.slice(0, 3).map((label) => (
+                            <Badge
+                              key={label?.id || `label-${Math.random()}`}
+                              variant="outline"
+                              style={{ borderColor: `#${label?.color || "888888"}` }}
+                            >
+                              {label?.name || "Unlabeled"}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">#{article?.number || "N/A"}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

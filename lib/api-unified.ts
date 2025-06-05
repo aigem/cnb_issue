@@ -198,6 +198,56 @@ export class ArticleApi {
   ): Promise<IssueDetail> {
     return this.client.patch<IssueDetail>("/api/articles", { number, ...updates })
   }
+
+  async publishArticle(number: string | number): Promise<IssueDetail> {
+    return this.updateArticle(number, { state: "open" })
+  }
+
+  async unpublishArticle(number: string | number): Promise<IssueDetail> {
+    return this.updateArticle(number, { state: "closed" })
+  }
+
+  async getDraftArticles(params: any = {}): Promise<Issue[]> {
+    return this.getArticles({
+      ...params,
+      state: "closed",
+      labels: "draft",
+    })
+  }
+
+  async getPublishedArticles(params: any = {}): Promise<Issue[]> {
+    return this.getArticles({
+      ...params,
+      state: "open",
+    })
+  }
+
+  async getArchivedArticles(params: any = {}): Promise<Issue[]> {
+    return this.getArticles({
+      ...params,
+      state: "closed",
+      labels: "archived",
+    })
+  }
+
+  async createDraft(title: string, body: string, labels: string[] = []): Promise<IssueDetail> {
+    return this.client.post<IssueDetail>("/api/articles", {
+      title,
+      body,
+      labels: [...labels, "draft"],
+      state: "closed",
+    })
+  }
+
+  async archiveArticle(number: string | number): Promise<IssueDetail> {
+    // First add the archived label
+    await this.client.post<any>(`/api/articles/${number}/labels`, {
+      labels: ["archived"],
+    })
+
+    // Then close the issue
+    return this.updateArticle(number, { state: "closed" })
+  }
 }
 
 // 评论相关 API

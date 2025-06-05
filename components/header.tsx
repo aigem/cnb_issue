@@ -1,19 +1,20 @@
 "use client"
 
 import type React from "react"
-
 import Link from "next/link"
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Search, Menu, X } from "lucide-react"
+import { Search, Menu, X, Settings, Shield } from "lucide-react"
 import { ModeToggle } from "./mode-toggle"
+import { useSettings } from "@/contexts/settings-context"
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const pathname = usePathname()
+  const { settings } = useSettings()
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -31,6 +32,9 @@ export default function Header() {
     { name: "About", path: "/about" },
   ]
 
+  // Check if user has admin access (you can implement proper auth here)
+  const hasAdminAccess = true // Replace with actual auth check
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -39,7 +43,14 @@ export default function Header() {
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <Link href="/" className="flex items-center space-x-2">
-            <span className="font-bold text-xl">ModernBlog</span>
+            {settings.logoUrl && (
+              <img
+                src={settings.logoUrl || "/placeholder.svg"}
+                alt={settings.siteName}
+                className="h-8 w-8 object-contain"
+              />
+            )}
+            <span className="font-bold text-xl">{settings.siteName}</span>
           </Link>
         </div>
 
@@ -55,6 +66,17 @@ export default function Header() {
               {item.name}
             </Link>
           ))}
+          {hasAdminAccess && (
+            <Link
+              href="/admin"
+              className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
+                pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+              }`}
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -71,6 +93,14 @@ export default function Header() {
               <span className="sr-only">Search</span>
             </Button>
           </form>
+          {hasAdminAccess && (
+            <Link href="/admin/settings">
+              <Button variant="outline" size="icon" title="Settings">
+                <Settings className="h-4 w-4" />
+                <span className="sr-only">Settings</span>
+              </Button>
+            </Link>
+          )}
           <ModeToggle />
         </div>
       </div>
@@ -91,6 +121,28 @@ export default function Header() {
                 {item.name}
               </Link>
             ))}
+            {hasAdminAccess && (
+              <>
+                <Link
+                  href="/admin"
+                  className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-2 ${
+                    pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+                  }`}
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Shield className="h-4 w-4" />
+                  Admin Dashboard
+                </Link>
+                <Link
+                  href="/admin/settings"
+                  className="text-sm font-medium transition-colors hover:text-primary flex items-center gap-2 text-muted-foreground"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Settings className="h-4 w-4" />
+                  Site Settings
+                </Link>
+              </>
+            )}
             <form onSubmit={handleSearch} className="flex relative mt-2">
               <Input
                 type="search"
@@ -107,6 +159,9 @@ export default function Header() {
           </nav>
         </div>
       )}
+
+      {/* Custom Header HTML */}
+      {settings.customHeaderHtml && <div dangerouslySetInnerHTML={{ __html: settings.customHeaderHtml }} />}
     </header>
   )
 }
