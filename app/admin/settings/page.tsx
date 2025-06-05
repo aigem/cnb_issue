@@ -3,10 +3,10 @@
 import { Suspense } from "react"
 import SettingsForm from "@/components/settings-form"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button" // Added Button
-import { LogOut } from "lucide-react" // Added LogOut
-import { useRouter } from "next/navigation" // Added useRouter
-import { useToast } from "@/hooks/use-toast" // For error handling
+import { Button } from "@/components/ui/button"
+import { LogOut } from "lucide-react"
+// useRouter and useToast are no longer needed directly here
+import { useLogoutHandler } from "@/hooks/use-auth-handlers" // Import the new hook
 
 function SettingsLoading() {
   return (
@@ -29,32 +29,7 @@ function SettingsLoading() {
 }
 
 export default function SettingsPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-
-  const handleLogout = async () => {
-    try {
-      const response = await fetch("/api/auth/logout", { method: "POST" })
-      if (response.ok) {
-        toast({ title: "Logged out", description: "You have been successfully logged out." })
-        router.push("/admin/login")
-      } else {
-        const data = await response.json()
-        toast({
-          title: "Logout Failed",
-          description: data.message || "An error occurred during logout.",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Logout error:", error)
-      toast({
-        title: "Logout Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
+  const handleLogout = useLogoutHandler()
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">

@@ -15,15 +15,18 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { articleApi, tagApi } from "@/lib/api-unified"
 import { isApiConfigured } from "@/lib/api"
 import Link from "next/link"
-
-type PriorityLabel = "P0" | "P1" | "P2" | "P3"
-const PRIORITY_LABELS: PriorityLabel[] = ["P0", "P1", "P2", "P3"]
+import {
+  type PriorityLabel,
+  PRIORITY_LABELS,
+  togglePriorityLabelInString,
+  isPriorityLabelActive,
+} from "@/lib/article-form-utils"
 
 export default function AdminDashboard() {
   const [publishedArticles, setPublishedArticles] = useState([])
   const [draftArticles, setDraftArticles] = useState([])
   const [archivedArticles, setArchivedArticles] = useState([])
-  const [tags, setTags] = useState([])
+  const [tagsList, setTagsList] = useState([]) // Renamed to avoid conflict with html tags
   const [isCreating, setIsCreating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [newArticle, setNewArticle] = useState({
@@ -38,18 +41,6 @@ export default function AdminDashboard() {
     loadData()
   }, [])
 
-  const handlePriorityClick = (priorityLabel: PriorityLabel) => {
-    let currentLabels = newArticle.labels
-      .split(/[\s,]+/) // Changed to regex split
-      .map((l) => l.trim())
-      .filter((l) => l && !PRIORITY_LABELS.includes(l as PriorityLabel)) // Remove existing Px labels
-
-    // Add the new priority label
-    currentLabels.push(priorityLabel)
-
-    setNewArticle({ ...newArticle, labels: currentLabels.filter((l) => l).join(", ") }) // Join with ", " for readability
-  }
-
   const loadData = async () => {
     try {
       if (!isApiConfigured()) {
@@ -59,34 +50,34 @@ export default function AdminDashboard() {
       setLoading(true)
       try {
         const tagsData = await tagApi.getTags()
-        setTags(tagsData || [])
+        setTagsList(tagsData || [])
       } catch (error) {
-        console.error("Error loading tags:", error)
-        setTags([])
+        // console.error("Error loading tags:", error); // Toast is shown by the overall catch
+        setTagsList([])
       }
       try {
         const published = await articleApi.getPublishedArticles({ pageSize: 100 })
         setPublishedArticles(published || [])
       } catch (error) {
-        console.error("Error loading published articles:", error)
+        // console.error("Error loading published articles:", error); // Toast is shown by the overall catch
         setPublishedArticles([])
       }
       try {
         const drafts = await articleApi.getDraftArticles({ pageSize: 100 })
         setDraftArticles(drafts || [])
       } catch (error) {
-        console.error("Error loading draft articles:", error)
+        // console.error("Error loading draft articles:", error); // Toast is shown by the overall catch
         setDraftArticles([])
       }
       try {
         const archived = await articleApi.getArchivedArticles({ pageSize: 100 })
         setArchivedArticles(archived || [])
       } catch (error) {
-        console.error("Error loading archived articles:", error)
+        // console.error("Error loading archived articles:", error); // Toast is shown by the overall catch
         setArchivedArticles([])
       }
     } catch (error) {
-      console.error("Error loading dashboard data:", error)
+      // console.error("Error loading dashboard data:", error); // This is the main error, toast is shown
       toast({
         title: "Error",
         description: "Failed to load dashboard data",
@@ -110,7 +101,7 @@ export default function AdminDashboard() {
     try {
       setIsCreating(true)
       const labels = newArticle.labels
-        .split(/[\s,]+/) // Changed to regex split
+        .split(/[\s,]+/)
         .map((l) => l.trim())
         .filter((l) => l.length > 0)
 
@@ -147,14 +138,14 @@ export default function AdminDashboard() {
     if (!PRIORITY_LABELS.includes(labelName as PriorityLabel)) return null
 
     const priorityColors: Record<PriorityLabel, string> = {
-      P0: "hsl(var(--destructive))", // Red
-      P1: "hsl(var(--primary))", // Using primary for P1 (e.g. Orange/Amber)
-      P2: "hsl(var(--primary) / 0.7)", // Lighter primary for P2 (e.g. Yellow)
-      P3: "hsl(var(--muted-foreground))", // Muted for P3 (e.g. Blue/Gray)
+      P0: "hsl(var(--destructive))",
+      P1: "hsl(var(--primary))",
+      P2: "hsl(var(--primary) / 0.7)",
+      P3: "hsl(var(--muted-foreground))",
     }
     return {
       backgroundColor: priorityColors[labelName as PriorityLabel],
-      color: "hsl(var(--destructive-foreground))", // White/light text for contrast
+      color: "hsl(var(--destructive-foreground))",
     }
   }
 
@@ -209,7 +200,7 @@ export default function AdminDashboard() {
             <Tags className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tags.length}</div>
+            <div className="text-2xl font-bold">{tagsList.length}</div>
           </CardContent>
         </Card>
       </div>
@@ -247,10 +238,13 @@ export default function AdminDashboard() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => handlePriorityClick(priority)}
+                    onClick={() => {
+                      const newLabelsString = togglePriorityLabelInString(newArticle.labels, priority);
+                      setNewArticle({ ...newArticle, labels: newLabelsString });
+                    }}
                     className={
-                      newArticle.labels.split(/[\s,]+/).map(l => l.trim()).includes(priority) // Regex split for checking active
-                        ? "border-primary text-primary ring-2 ring-primary" // Highlight if active
+                      isPriorityLabelActive(newArticle.labels, priority)
+                        ? "border-primary text-primary ring-2 ring-primary"
                         : ""
                     }
                   >
@@ -323,9 +317,9 @@ export default function AdminDashboard() {
                           <h3 className="font-medium">
                             <Link
                               href={
-                                index === 0 // Published
+                                index === 0
                                   ? `/articles/${article?.number}`
-                                  : `/articles/${article?.number}/preview` // Drafts & Archived
+                                  : `/articles/${article?.number}/preview`
                               }
                               className="hover:underline"
                             >

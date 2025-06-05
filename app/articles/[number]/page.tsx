@@ -88,8 +88,9 @@ export default function ArticlePage() {
     try {
       giteaBaseUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin;
     } catch (e) {
-      console.error("Invalid NEXT_PUBLIC_API_BASE_URL for origin parsing:", process.env.NEXT_PUBLIC_API_BASE_URL);
-      // Fallback might be needed if URL is relative or not a full URL, but origin parsing is generally robust.
+      // console.error("Invalid NEXT_PUBLIC_API_BASE_URL for origin parsing:", process.env.NEXT_PUBLIC_API_BASE_URL);
+      // This error is not critical for page rendering, URL will just be "#" if it fails.
+      // Logging can be noisy if URL is intentionally relative or not a full URL in some environments.
     }
   }
   const repoName = process.env.NEXT_PUBLIC_REPO_NAME;

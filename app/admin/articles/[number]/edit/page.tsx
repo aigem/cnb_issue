@@ -11,11 +11,13 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { Loader2, Save } from "lucide-react"
 import Link from "next/link"
-import { arraysEqual } from "@/lib/utils" // Assuming a utility function for comparing arrays
-
-// Define PriorityLabel type and PRIORITY_LABELS constant
-type PriorityLabel = "P0" | "P1" | "P2" | "P3"
-const PRIORITY_LABELS: PriorityLabel[] = ["P0", "P1", "P2", "P3"]
+import { arraysEqual } from "@/lib/utils"
+import {
+  type PriorityLabel,
+  PRIORITY_LABELS,
+  togglePriorityLabelInString,
+  isPriorityLabelActive,
+} from "@/lib/article-form-utils"
 
 interface ArticleFormState {
   title: string;
@@ -51,7 +53,7 @@ export default function EditArticlePage() {
           }
         })
         .catch(err => {
-          console.error("Failed to fetch article for editing:", err)
+          // console.error("Failed to fetch article for editing:", err) // Toast is shown
           toast({ title: "Error", description: "Failed to load article data.", variant: "destructive" })
           notFound()
         })
@@ -64,51 +66,42 @@ export default function EditArticlePage() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handlePriorityClick = (priorityLabel: PriorityLabel) => {
-    let currentLabels = formData.labels
-      .split(/[\s,]+/)
-      .map((l) => l.trim())
-      .filter((l) => l && !PRIORITY_LABELS.includes(l as PriorityLabel))
-
-    currentLabels.push(priorityLabel)
-    setFormData(prev => ({ ...prev, labels: currentLabels.filter((l) => l).join(", ") }))
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!article) return
 
     setIsSaving(true)
     try {
-      // Step 1: Update Title and Body
-      // Check if title or body actually changed to avoid unnecessary API calls
       let mainContentUpdated = false
       if (formData.title !== article.title || formData.body !== article.body) {
         await articleApi.updateArticle(article.number, { title: formData.title, body: formData.body });
         mainContentUpdated = true;
       }
 
-      // Step 2: Update Labels
       const newLabelsArray = formData.labels.split(/[\s,]+/).map(l => l.trim()).filter(l => l)
       const currentLabelsArray = article.labels?.map(l => l.name).sort() || []
-
-      // Sort newLabelsArray for consistent comparison
       const sortedNewLabelsArray = [...newLabelsArray].sort()
 
+      let labelsUpdated = false;
       if (!arraysEqual(sortedNewLabelsArray, currentLabelsArray)) {
         await articleApi.setArticleLabels(article.number, newLabelsArray)
-      } else if (!mainContentUpdated && arraysEqual(sortedNewLabelsArray, currentLabelsArray)) {
-        // Nothing changed
-        toast({ title: "No Changes", description: "No changes detected to save." })
-        setIsSaving(false)
-        return
+        labelsUpdated = true;
       }
 
-      toast({ title: "Success", description: "Article updated successfully." })
-      router.push(`/articles/${article.number}`)
-      router.refresh() // Refresh data on target page and potentially current if staying
+      if (!mainContentUpdated && !labelsUpdated) {
+        toast({ title: "No Changes", description: "No changes detected to save." })
+      } else {
+        toast({ title: "Success", description: "Article updated successfully." })
+        router.push(`/articles/${article.number}`)
+        // It's good practice to refresh data that might be stale.
+        // router.refresh() might cause a full reload of server components on the current page if any part of layout uses it.
+        // For redirecting and then wanting fresh data on the *new* page, Next.js <Link> navigation often handles this.
+        // If the target page /articles/[article.number] uses client-side fetching in useEffect, it will refetch.
+        // If it's server-rendered with cached data, revalidatePath on the server (done by APIs) is key.
+        // For this client-side navigation, router.push is usually sufficient if target page fetches fresh data.
+      }
     } catch (error) {
-      console.error("Error updating article:", error)
+      // console.error("Error updating article:", error) // Toast is shown
       toast({ title: "Error", description: `Failed to update article: ${error.message}`, variant: "destructive" })
     } finally {
       setIsSaving(false)
@@ -144,7 +137,6 @@ export default function EditArticlePage() {
           </Link>
           <h1 className="text-3xl font-bold mt-1">Edit Article</h1>
         </div>
-        {/* Optional: Display original title if form title is empty or different */}
         <p className="text-sm text-muted-foreground truncate max-w-xs">Editing: {article.title}</p>
       </div>
 
@@ -169,9 +161,12 @@ export default function EditArticlePage() {
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => handlePriorityClick(priority)}
+                onClick={() => {
+                  const newLabelsString = togglePriorityLabelInString(formData.labels, priority);
+                  setFormData(prev => ({ ...prev, labels: newLabelsString }));
+                }}
                 className={
-                  formData.labels.split(/[\s,]+/).map(l => l.trim()).includes(priority)
+                  isPriorityLabelActive(formData.labels, priority)
                     ? "border-primary text-primary ring-2 ring-primary"
                     : ""
                 }

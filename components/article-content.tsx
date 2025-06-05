@@ -55,12 +55,13 @@ export default function ArticleContent({ content }: ArticleContentProps) {
     <div className="article-content">
       <div className="text-sm text-muted-foreground mb-6">{readingTime} min read</div>
 
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeRaw, rehypeHighlight]}
-        className="prose prose-lg dark:prose-invert max-w-none"
-        // If custom components are needed for images or other elements:
-        // components={{
+      <div className="prose prose-lg dark:prose-invert max-w-none">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeRaw, rehypeHighlight]}
+          // className prop removed from here
+          // If custom components are needed for images or other elements:
+          // components={{
         //   img: ({node, ...props}) => {
         //     // Custom image handling here, e.g., error handling, placeholders
         //     // console.log(props.src); // Check the src being passed

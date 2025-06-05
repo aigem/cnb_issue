@@ -156,7 +156,8 @@
   border-radius: 0.5rem;
 }
 
-.article-content code {
+/* Base code styling - will be affected by highlight.js theme */
+.article-content code:not(pre code) { /* Target inline code, not code in pre */
   background: hsl(var(--muted));
   padding: 0.2rem 0.4rem;
   border-radius: 0.25rem;
@@ -164,8 +165,8 @@
 }
 
 .article-content pre {
-  background: hsl(var(--muted));
-  padding: 1rem;
+  /* background: hsl(var(--muted)); */ /* Let highlight.js theme handle pre background */
+  padding: 1rem; /* Often provided by theme, but can be default */
   border-radius: 0.5rem;
   overflow-x: auto;
   margin: 1rem 0;
@@ -174,7 +175,9 @@
 .article-content pre code {
   background: none;
   padding: 0;
+  font-size: inherit; /* Inherit from pre for consistency */
 }
+
 
 /* Tag cloud styling */
 .tag-cloud .tag-item {
@@ -250,4 +253,91 @@
     font-size: 12pt;
     line-height: 1.5;
   }
+}
+
+/* Dark theme overrides for highlight.js (based on github-dark.css) */
+/* These rules apply when the .dark class is on the html/body tag */
+.dark .hljs {
+  color: #c9d1d9; /* Default text in code block */
+  background: #0d1117; /* Code block background */
+}
+
+.dark .hljs-comment,
+.dark .hljs-punctuation, /* Punctuation might need more specific targeting if not styled by hljs-comment */
+.dark .hljs-meta { /* e.g. <!DOCTYPE html> */
+  color: #8b949e; /* Gray for comments, meta */
+}
+
+.dark .hljs-tag { /* HTML Tags <> */
+  color: #8b949e;
+}
+.dark .hljs-tag .hljs-name, /* <div ...> */
+.dark .hljs-tag .hljs-attr { /* class="...", id="..." */
+  color: #7ee787; /* Green for tag names and attributes */
+}
+
+.dark .hljs-keyword, /* JS keywords: const, let, function */
+.dark .hljs-selector-tag, /* CSS selectors: body, .class, #id */
+.dark .hljs-operator, /* JS operators: +, -, = */
+.dark .hljs-doctag { /* JSDoc @param, @returns */
+  color: #ff7b72; /* Coral/Red for keywords, CSS selectors */
+}
+
+
+.dark .hljs-literal, /* true, false, null */
+.dark .hljs-number, /* 123, 0.5 */
+.dark .hljs-string, /* "string", 'string' */
+.dark .hljs-regexp, /* /regex/ */
+.dark .hljs-char.escape_ { /* \n, \t */
+  color: #a5d6ff; /* Light blue for literals, strings, numbers */
+}
+
+.dark .hljs-title, /* Function names, class names if not more specific */
+.dark .hljs-title.class_, /* Class definitions: class MyClass */
+.dark .hljs-title.class_.inherited__, /* Inherited class names */
+.dark .hljs-title.function_ { /* Function declarations: function myFunction() */
+  color: #d2a8ff; /* Purple for function and class titles */
+}
+
+.dark .hljs-variable, /* Variable names: myVar */
+.dark .hljs-template-variable, /* `${myVar}` */
+.dark .hljs-property, /* Object properties: obj.myProp */
+.dark .hljs-symbol, /* Symbols */
+.dark .hljs-bullet { /* Markdown list bullets, if styled by hljs */
+  color: #ffa657; /* Orange for variables, properties */
+}
+
+.dark .hljs-type, /* Type annotations: string, number, boolean */
+.dark .hljs-built_in, /* Built-in globals: console, Math */
+.dark .hljs-link { /* Links in markdown, if styled by hljs */
+  color: #79c0ff; /* Blue for types, built-ins */
+}
+
+.dark .hljs-emphasis { /* *italic* */
+  font-style: italic;
+}
+
+.dark .hljs-strong { /* **bold** */
+  font-weight: bold;
+}
+
+.dark .hljs-addition { /* Diff additions */
+  color: #7ee787;
+  background-color: rgba(63, 185, 80, 0.2);
+}
+
+.dark .hljs-deletion { /* Diff deletions */
+  color: #ffa198;
+  background-color: rgba(255, 100, 88, 0.2);
+}
+
+/* Ensure pre background is also set for dark mode if not handled by .hljs */
+.dark .article-content pre {
+  background: #0d1117; /* Match .dark .hljs background */
+}
+
+/* Inline code in dark mode */
+.dark .article-content code:not(pre code) {
+  background: hsl(var(--secondary)); /* Use a dark muted background */
+  color: hsl(var(--secondary-foreground));
 }
