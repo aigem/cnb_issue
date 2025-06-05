@@ -86,11 +86,16 @@ export default function ArticlePage() {
   let giteaBaseUrl = "";
   if (process.env.NEXT_PUBLIC_API_BASE_URL) {
     try {
-      giteaBaseUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL).origin;
+      const originUrl = new URL(process.env.NEXT_PUBLIC_API_BASE_URL);
+      if (originUrl.hostname.startsWith("api.")) {
+        const newHostname = originUrl.hostname.substring(4);
+        giteaBaseUrl = `${originUrl.protocol}//${newHostname}${originUrl.port ? ':' + originUrl.port : ''}`;
+      } else {
+        giteaBaseUrl = originUrl.origin;
+      }
     } catch (e) {
-      // console.error("Invalid NEXT_PUBLIC_API_BASE_URL for origin parsing:", process.env.NEXT_PUBLIC_API_BASE_URL);
-      // This error is not critical for page rendering, URL will just be "#" if it fails.
-      // Logging can be noisy if URL is intentionally relative or not a full URL in some environments.
+      // console.error("Invalid NEXT_PUBLIC_API_BASE_URL for URL parsing:", process.env.NEXT_PUBLIC_API_BASE_URL);
+      giteaBaseUrl = ""; // Ensure it's reset on error
     }
   }
   const repoName = process.env.NEXT_PUBLIC_REPO_NAME;
