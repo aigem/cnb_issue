@@ -1,4 +1,9 @@
 import type { IssueDetail, Issue, IssueComment } from "@/types"
+import { settingsApi } from "@/lib/settings-api" // Added import
+
+// Define NextFetchRequestConfig if not available globally, or import from Next.js
+// For simplicity, using a basic type definition here.
+type NextFetchRequestConfig = RequestInit["next"]
 
 // 配置管理
 export class ApiConfig {
@@ -42,7 +47,11 @@ class ApiClient {
     this.config = ApiConfig.getInstance()
   }
 
-  private async makeRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  private async makeRequest(
+    endpoint: string,
+    options: RequestInit = {},
+    nextOptions?: NextFetchRequestConfig,
+  ): Promise<Response> {
     const url = this.config.isServerSide ? `${this.config.apiBaseUrl}/${this.config.repoName}${endpoint}` : endpoint
 
     const headers: HeadersInit = {
@@ -58,12 +67,13 @@ class ApiClient {
     return fetch(url, {
       ...options,
       headers,
+      next: nextOptions, // Pass nextOptions to fetch
       signal: AbortSignal.timeout(15000),
     })
   }
 
-  async get<T>(endpoint: string): Promise<T> {
-    const response = await this.makeRequest(endpoint)
+  async get<T>(endpoint: string, nextOptions?: NextFetchRequestConfig): Promise<T> {
+    const response = await this.makeRequest(endpoint, {}, nextOptions) // Pass nextOptions
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -145,7 +155,12 @@ export class ArticleApi {
     })
 
     try {
-      const data = await this.client.get<Issue[]>(`/-/issues?${searchParams.toString()}`)
+      const currentSettings = await settingsApi.getSettings()
+      const ttl =
+        typeof currentSettings.articleCacheTTL === "number" && currentSettings.articleCacheTTL > 0
+          ? currentSettings.articleCacheTTL
+          : 600 // Fallback TTL
+      const data = await this.client.get<Issue[]>(`/-/issues?${searchParams.toString()}`, { revalidate: ttl })
       return Array.isArray(data) ? data : []
     } catch (error) {
       console.error("Error fetching articles:", error)
@@ -176,8 +191,14 @@ export class ArticleApi {
 
     try {
       if (config.isServerSide) {
-        return await this.client.get<IssueDetail>(`/-/issues/${number}`)
+        const currentSettings = await settingsApi.getSettings()
+        const ttl =
+          typeof currentSettings.articleCacheTTL === "number" && currentSettings.articleCacheTTL > 0
+            ? currentSettings.articleCacheTTL
+            : 600 // Fallback TTL
+        return await this.client.get<IssueDetail>(`/-/issues/${number}`, { revalidate: ttl })
       } else {
+        // Client-side fetching, no revalidate option here as it's for Next.js server-side fetch
         return await this.client.get<IssueDetail>(`/api/articles/${number}`)
       }
     } catch (error) {
@@ -259,11 +280,18 @@ export class CommentApi {
 
     try {
       if (config.isServerSide) {
+        const currentSettings = await settingsApi.getSettings()
+        const ttl =
+          typeof currentSettings.commentCacheTTL === "number" && currentSettings.commentCacheTTL > 0
+            ? currentSettings.commentCacheTTL
+            : 600 // Fallback TTL
         const data = await this.client.get<IssueComment[]>(
           `/-/issues/${number}/comments?page=${page}&page_size=${pageSize}`,
+          { revalidate: ttl },
         )
         return Array.isArray(data) ? data : []
       } else {
+        // Client-side fetching
         const data = await this.client.get<IssueComment[]>(
           `/api/articles/${number}/comments?page=${page}&pageSize=${pageSize}`,
         )

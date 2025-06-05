@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 const API_TOKEN = process.env.API_TOKEN
@@ -51,6 +52,59 @@ export async function GET(request: NextRequest, { params }: { params: { number: 
     return NextResponse.json(data)
   } catch (error) {
     console.error(`[Article Comments] Error fetching comments for article ${params.number}:`, error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest, { params }: { params: { number: string } }) {
+  console.log(`[Article Comments POST] Route called for article ${params.number}`)
+
+  try {
+    if (!API_BASE_URL || !API_TOKEN) {
+      return NextResponse.json({ error: "API configuration missing" }, { status: 500 })
+    }
+
+    const { number } = params
+    const comment = await request.json()
+
+    if (!comment.body) {
+      return NextResponse.json({ error: "Comment body is required" }, { status: 400 })
+    }
+
+    const apiUrl = `${API_BASE_URL}/${REPO_NAME}/-/issues/${number}/comments`
+    console.log(`[Article Comments POST] Posting to: ${apiUrl}`)
+
+    const response = await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+      body: JSON.stringify({ body: comment.body }),
+    })
+
+    console.log(`[Article Comments POST] API responded with status: ${response.status}`)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Article Comments POST] API Error: ${response.status} ${response.statusText}`, errorText)
+      return NextResponse.json(
+        { error: `Failed to post comment: ${response.status} ${response.statusText}` },
+        { status: response.status },
+      )
+    }
+
+    const data = await response.json()
+    console.log("[Article Comments POST] Comment posted successfully:", data)
+
+    revalidatePath(`/articles/${params.number}`)
+
+    return NextResponse.json(data, { status: 201 })
+  } catch (error) {
+    console.error(`[Article Comments POST] Error posting comment for article ${params.number}:`, error)
+    if (error instanceof SyntaxError) {
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 })
+    }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

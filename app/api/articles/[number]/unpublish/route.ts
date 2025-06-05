@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { revalidatePath } from "next/cache"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 const API_TOKEN = process.env.API_TOKEN
@@ -30,6 +31,11 @@ export async function POST(request: NextRequest, { params }: { params: { number:
     }
 
     const data = await response.json()
+
+    revalidatePath(`/articles/${params.number}`)
+    revalidatePath("/")
+    revalidatePath("/articles")
+
     return NextResponse.json(data)
   } catch (error) {
     console.error("Error unpublishing article:", error)

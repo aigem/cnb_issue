@@ -447,6 +447,42 @@ export default function SettingsForm() {
                     onCheckedChange={(checked) => handleSwitchChange("enableComments", checked)}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="articleCacheTTL">Article Cache TTL (seconds)</Label>
+                  <Input
+                    id="articleCacheTTL"
+                    name="articleCacheTTL"
+                    type="number"
+                    min="0"
+                    value={formData.articleCacheTTL || ""}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value)
+                      setFormData((prev) => ({
+                        ...prev,
+                        articleCacheTTL: isNaN(value) ? undefined : value,
+                      }))
+                    }}
+                    placeholder="Default: 600"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="commentCacheTTL">Comment Cache TTL (seconds)</Label>
+                  <Input
+                    id="commentCacheTTL"
+                    name="commentCacheTTL"
+                    type="number"
+                    min="0"
+                    value={formData.commentCacheTTL || ""}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value)
+                      setFormData((prev) => ({
+                        ...prev,
+                        commentCacheTTL: isNaN(value) ? undefined : value,
+                      }))
+                    }}
+                    placeholder="Default: 600"
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

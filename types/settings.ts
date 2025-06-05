@@ -33,6 +33,10 @@ export interface SiteSettings {
   customCss?: string
   customHeaderHtml?: string
   customFooterHtml?: string
+
+  // Cache settings
+  articleCacheTTL?: number
+  commentCacheTTL?: number
 }
 
 export const defaultSettings: SiteSettings = {
@@ -56,4 +60,7 @@ export const defaultSettings: SiteSettings = {
   enableComments: true,
 
   defaultMetaImage: "/og-image.png",
+
+  articleCacheTTL: 600, // 10 minutes
+  commentCacheTTL: 600, // 10 minutes
 }
