@@ -11,6 +11,7 @@ import DynamicStyles from "@/components/dynamic-styles"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('http://localhost:3000'), // Added this line
   title: {
     template: "%s | Modern Blog",
     default: "Modern Blog - Next.js 15 Powered",

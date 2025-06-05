@@ -230,7 +230,8 @@ export class ArticleApi {
     number: string | number,
     updates: { title?: string; body?: string; state?: string },
   ): Promise<IssueDetail> {
-    return this.client.patch<IssueDetail>("/api/articles", { number, ...updates })
+    // Call the Next.js backend route for updating a specific article
+    return this.client.patch<IssueDetail>(`/api/articles/${number}`, updates);
   }
 
   async publishArticle(number: string | number): Promise<IssueDetail> {
@@ -331,21 +332,22 @@ export class TagApi {
   private client = new ApiClient()
 
   async getTags(): Promise<any[]> {
-    const config = ApiConfig.getInstance()
+    const config = ApiConfig.getInstance();
 
+    // This method is now intended for server-side use only.
+    if (!config.isServerSide) {
+      console.warn("TagApi.getTags called on client-side. This method is intended for server-side use. Use fetchTags from api-client.ts instead.");
+      return [];
+    }
+
+    // Server-side logic
     try {
-      if (config.isServerSide) {
-        // 服务端获取所有文章来提取标签
-        const articleApi = new ArticleApi()
-        const articles = await articleApi.getArticles({ pageSize: 100, state: "open" })
-        return this.extractTagsFromArticles(articles)
-      } else {
-        const data = await this.client.get<any[]>("/api/tags")
-        return Array.isArray(data) ? data : []
-      }
+      const articleApi = new ArticleApi();
+      const articles = await articleApi.getArticles({ pageSize: 100, state: "open" }); // Fetch all open (published) articles
+      return this.extractTagsFromArticles(articles);
     } catch (error) {
-      console.error("Error fetching tags:", error)
-      return []
+      console.error("Error fetching tags on server:", error);
+      return [];
     }
   }
 

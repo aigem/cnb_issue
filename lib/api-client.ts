@@ -62,6 +62,10 @@ export async function fetchArticles(
 }
 
 export async function fetchArticle(number: string): Promise<IssueDetail | null> {
+  if (typeof number !== 'string' || !/^[1-9]\d*$/.test(number)) {
+    console.warn(`[fetchArticle] Invalid article number requested: "${number}". Article number must be a positive integer string. Returning null.`);
+    return null;
+  }
   try {
     console.log(`[fetchArticle] Fetching article ${number}`)
     const response = await fetch(`/api/articles/${number}`)
