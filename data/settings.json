@@ -1,0 +1,34 @@
+{
+  "siteName": "cnb_Blog",
+  "siteDescription": "一个现代化的CNB博客系统",
+  "siteKeywords": [
+    "博客",
+    "ai",
+    "技术",
+    "cnb"
+  ],
+  "primaryColor": "#2563eb",
+  "accentColor": "#dc2626",
+  "logoUrl": "/logo.svg",
+  "faviconUrl": "/favicon.ico",
+  "socialLinks": {
+    "twitter": "https://twitter.com/cnbblog",
+    "github": "https://github.com/cnbblog"
+  },
+  "articlesPerPage": 12,
+  "featuredTags": [
+    "nextjs",
+    "react",
+    "typescript"
+  ],
+  "showAuthorInfo": true,
+  "enableComments": true,
+  "defaultMetaImage": "/og-image.png",
+  "apiCacheMinutes": 10,
+  "localStorageCacheMinutes": 120,
+  "enableDebugMode": false,
+  "enableAnalytics": false,
+  "maintenanceMode": false,
+  "enableSearch": true,
+  "searchResultsPerPage": 5
+}
