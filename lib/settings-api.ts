@@ -4,7 +4,6 @@ export class SettingsApi {
   private static instance: SettingsApi
   private settingsCache: SiteSettings | null = null
   private lastFetchTime = 0
-  private readonly cacheDuration = 5 * 60 * 1000 // 5 minutes
 
   private constructor() { }
 
@@ -15,10 +14,18 @@ export class SettingsApi {
     return SettingsApi.instance
   }
 
+  // Get cache duration from current settings
+  private getCacheDuration(): number {
+    const settings = this.settingsCache || defaultSettings
+    return settings.apiCacheMinutes * 60 * 1000
+  }
+
   async getSettings(): Promise<SiteSettings> {
     // Check cache first
     const now = Date.now()
-    if (this.settingsCache && now - this.lastFetchTime < this.cacheDuration) {
+    const cacheDuration = this.getCacheDuration()
+
+    if (this.settingsCache && now - this.lastFetchTime < cacheDuration) {
       return this.settingsCache
     }
 

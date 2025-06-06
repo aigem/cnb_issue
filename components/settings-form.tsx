@@ -249,6 +249,7 @@ export default function SettingsForm() {
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="social">Social Media</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
+            <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="advanced">Advanced</TabsTrigger>
           </TabsList>
 
@@ -450,6 +451,117 @@ export default function SettingsForm() {
                     id="enableComments"
                     checked={formData.enableComments}
                     onCheckedChange={(checked) => handleSwitchChange("enableComments", checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="performance">
+            <Card>
+              <CardHeader>
+                <CardTitle>Performance & System Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="apiCacheMinutes">API Cache Duration (minutes)</Label>
+                  <Input
+                    id="apiCacheMinutes"
+                    name="apiCacheMinutes"
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={formData.apiCacheMinutes}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value)
+                      if (!isNaN(value)) {
+                        setFormData((prev) => ({ ...prev, apiCacheMinutes: value }))
+                      }
+                    }}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    How long to cache API responses (1-1440 minutes)
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="localStorageCacheMinutes">Local Storage Cache Duration (minutes)</Label>
+                  <Input
+                    id="localStorageCacheMinutes"
+                    name="localStorageCacheMinutes"
+                    type="number"
+                    min="1"
+                    max="10080"
+                    value={formData.localStorageCacheMinutes}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value)
+                      if (!isNaN(value)) {
+                        setFormData((prev) => ({ ...prev, localStorageCacheMinutes: value }))
+                      }
+                    }}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    How long to cache settings in browser (1-10080 minutes)
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="searchResultsPerPage">Search Results Per Page</Label>
+                  <Input
+                    id="searchResultsPerPage"
+                    name="searchResultsPerPage"
+                    type="number"
+                    min="5"
+                    max="100"
+                    value={formData.searchResultsPerPage}
+                    onChange={(e) => {
+                      const value = Number.parseInt(e.target.value)
+                      if (!isNaN(value)) {
+                        setFormData((prev) => ({ ...prev, searchResultsPerPage: value }))
+                      }
+                    }}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enableSearch">Enable Search</Label>
+                    <p className="text-sm text-muted-foreground">Allow users to search articles</p>
+                  </div>
+                  <Switch
+                    id="enableSearch"
+                    checked={formData.enableSearch}
+                    onCheckedChange={(checked) => handleSwitchChange("enableSearch", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enableAnalytics">Enable Analytics</Label>
+                    <p className="text-sm text-muted-foreground">Track website analytics</p>
+                  </div>
+                  <Switch
+                    id="enableAnalytics"
+                    checked={formData.enableAnalytics}
+                    onCheckedChange={(checked) => handleSwitchChange("enableAnalytics", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="enableDebugMode">Debug Mode</Label>
+                    <p className="text-sm text-muted-foreground">Show debug information in console</p>
+                  </div>
+                  <Switch
+                    id="enableDebugMode"
+                    checked={formData.enableDebugMode}
+                    onCheckedChange={(checked) => handleSwitchChange("enableDebugMode", checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="maintenanceMode">Maintenance Mode</Label>
+                    <p className="text-sm text-muted-foreground text-orange-600">Restrict site access to admins only</p>
+                  </div>
+                  <Switch
+                    id="maintenanceMode"
+                    checked={formData.maintenanceMode}
+                    onCheckedChange={(checked) => handleSwitchChange("maintenanceMode", checked)}
                   />
                 </div>
               </CardContent>

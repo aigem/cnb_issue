@@ -29,6 +29,19 @@ export interface SiteSettings {
   defaultMetaImage: string
   googleAnalyticsId?: string
 
+  // Performance & Cache settings
+  apiCacheMinutes: number
+  localStorageCacheMinutes: number
+
+  // System settings
+  enableDebugMode: boolean
+  enableAnalytics: boolean
+  maintenanceMode: boolean
+
+  // Search settings
+  enableSearch: boolean
+  searchResultsPerPage: number
+
   // Advanced settings
   customCss?: string
   customHeaderHtml?: string
@@ -56,4 +69,17 @@ export const defaultSettings: SiteSettings = {
   enableComments: true,
 
   defaultMetaImage: "/og-image.png",
+
+  // Performance & Cache settings
+  apiCacheMinutes: 5,
+  localStorageCacheMinutes: 60,
+
+  // System settings
+  enableDebugMode: false,
+  enableAnalytics: true,
+  maintenanceMode: false,
+
+  // Search settings
+  enableSearch: true,
+  searchResultsPerPage: 20,
 }

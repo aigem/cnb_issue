@@ -28,8 +28,8 @@ export const useSettings = () => useContext(SettingsContext)
 const SETTINGS_CACHE_KEY = 'site-settings-cache'
 const SETTINGS_CACHE_TIMESTAMP_KEY = 'site-settings-cache-timestamp'
 
-// Get cached settings from localStorage
-function getCachedSettings(): SiteSettings | null {
+// Get cached settings from localStorage with dynamic cache time
+function getCachedSettings(cacheMinutes: number = 60): SiteSettings | null {
   if (typeof window === 'undefined') return null
 
   try {
@@ -38,8 +38,9 @@ function getCachedSettings(): SiteSettings | null {
 
     if (cached && timestamp) {
       const cacheAge = Date.now() - parseInt(timestamp)
-      // Use cache if it's less than 1 hour old
-      if (cacheAge < 60 * 60 * 1000) {
+      const cacheMaxAge = cacheMinutes * 60 * 1000
+
+      if (cacheAge < cacheMaxAge) {
         return JSON.parse(cached) as SiteSettings
       }
     }
@@ -48,6 +49,11 @@ function getCachedSettings(): SiteSettings | null {
   }
 
   return null
+}
+
+// Always use defaults for initial render to avoid hydration mismatch
+function getInitialSettings(): SiteSettings {
+  return defaultSettings
 }
 
 // Save settings to localStorage cache
@@ -63,8 +69,8 @@ function setCachedSettings(settings: SiteSettings) {
 }
 
 export const SettingsProvider = ({ children }: { children: ReactNode }) => {
-  // Always initialize with default settings to avoid hydration mismatch
-  const [settings, setSettings] = useState<SiteSettings>(defaultSettings)
+  // Initialize with server-side or cached settings to prevent flashing
+  const [settings, setSettings] = useState<SiteSettings>(() => getInitialSettings())
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isHydrated, setIsHydrated] = useState(false)
@@ -81,23 +87,37 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       try {
         setError(null)
 
-        // First try to load from cache for immediate update
-        const cached = getCachedSettings()
-        if (cached) {
-          const cachedSettings = { ...defaultSettings, ...cached }
+        // Load cached and server settings simultaneously for faster response
+        const [cached, serverSettings] = await Promise.allSettled([
+          // Get cached settings immediately
+          Promise.resolve(getCachedSettings(defaultSettings.localStorageCacheMinutes)),
+          // Get server settings
+          settingsApi.getSettings()
+        ])
+
+        // Use cached settings first if available
+        if (cached.status === 'fulfilled' && cached.value) {
+          const cachedSettings = { ...defaultSettings, ...cached.value }
           setSettings(cachedSettings)
+          setCachedSettings(cachedSettings)
         }
 
-        // Then load from server/file for latest data
-        const loadedSettings = await settingsApi.getSettings()
+        // Then use server settings if different and successful
+        if (serverSettings.status === 'fulfilled') {
+          const loadedSettings = serverSettings.value
+          const currentSettings = cached.status === 'fulfilled' && cached.value ?
+            { ...defaultSettings, ...cached.value } : defaultSettings
 
-        // Only update if settings actually changed
-        const currentSettingsStr = JSON.stringify(cached || defaultSettings)
-        const loadedSettingsStr = JSON.stringify(loadedSettings)
+          // Only update if settings actually changed
+          const currentSettingsStr = JSON.stringify(currentSettings)
+          const loadedSettingsStr = JSON.stringify(loadedSettings)
 
-        if (currentSettingsStr !== loadedSettingsStr) {
-          setSettings(loadedSettings)
-          setCachedSettings(loadedSettings)
+          if (currentSettingsStr !== loadedSettingsStr) {
+            setSettings(loadedSettings)
+            setCachedSettings(loadedSettings)
+          }
+        } else if (serverSettings.status === 'rejected') {
+          console.warn("Failed to load settings from server:", serverSettings.reason)
         }
       } catch (err) {
         console.error("Failed to load settings:", err)
@@ -107,7 +127,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    loadSettings()
+    // Use a small delay to make the transition smoother
+    const timeoutId = setTimeout(loadSettings, 50)
+    return () => clearTimeout(timeoutId)
   }, [isHydrated])
 
   const saveSettings = async (newSettings: SiteSettings): Promise<boolean> => {
