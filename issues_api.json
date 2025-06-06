@@ -1,0 +1,1250 @@
+    "/{repo}/-/issues": {
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "ListIssues",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "查询仓库的 Issues。List issues.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "default": 1,
+                    "description": "pagination page number",
+                    "in": "query",
+                    "name": "page",
+                    "type": "integer"
+                },
+                {
+                    "default": 30,
+                    "description": "pagination page size",
+                    "in": "query",
+                    "name": "page_size",
+                    "type": "integer"
+                },
+                {
+                    "description": "issue state open or closed",
+                    "in": "query",
+                    "name": "state",
+                    "type": "string"
+                },
+                {
+                    "description": "issue search key",
+                    "in": "query",
+                    "name": "keyword",
+                    "type": "string"
+                },
+                {
+                    "description": "issue priority example: p0,p1,p2,p3",
+                    "in": "query",
+                    "name": "priority",
+                    "type": "string"
+                },
+                {
+                    "description": "issue labels example: git,bug,feature",
+                    "in": "query",
+                    "name": "labels",
+                    "type": "string"
+                },
+                {
+                    "description": "issue authors name, example: 张三,李四",
+                    "in": "query",
+                    "name": "authors",
+                    "type": "string"
+                },
+                {
+                    "description": "issue assignees name, example: 张三,李四,-; - means assign to nobody",
+                    "in": "query",
+                    "name": "assignees",
+                    "type": "string"
+                },
+                {
+                    "description": "issue filter update time begin  example: 2022-01-31",
+                    "in": "query",
+                    "name": "updated_time_begin",
+                    "type": "string"
+                },
+                {
+                    "description": "issue filter update time end,  example: 2022-01-31",
+                    "in": "query",
+                    "name": "updated_time_end",
+                    "type": "string"
+                },
+                {
+                    "description": "issue filter close time begin  example: 2022-01-31",
+                    "in": "query",
+                    "name": "close_time_begin",
+                    "type": "string"
+                },
+                {
+                    "description": "issue filter close time end,  example: 2022-01-31",
+                    "in": "query",
+                    "name": "close_time_end",
+                    "type": "string"
+                },
+                {
+                    "description": "issue order, example: created_at, -updated_at, reference_count。‘-’ prefix means descending order",
+                    "in": "query",
+                    "name": "order_by",
+                    "type": "string"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "items": {
+                            "$ref": "#/definitions/api.Issue"
+                        },
+                        "type": "array"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "CreateIssue",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "创建一个 Issue。Create an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "Post Issue Form",
+                    "in": "body",
+                    "name": "post_issue_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PostIssueForm"
+                    }
+                }
+            ],
+            "responses": {
+                "201": {
+                    "description": "Created",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueDetail"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}": {
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "GetIssue",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "查询指定的 Issues。Get an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueDetail"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "patch": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "UpdateIssue",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "更新一个 Issue。Update an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "Patch Issue Form",
+                    "in": "body",
+                    "name": "patch_issue_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PatchIssueForm"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueDetail"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/assignees": {
+        "delete": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "DeleteIssueAssignees",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "删除 Issue 中的 Assignees。 Removes one or more assignees from an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "Delete Issue Assignees Form",
+                    "in": "body",
+                    "name": "delete_issue_assignees_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.DeleteIssueAssigneesForm"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueDetail"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "ListIssueAssignees",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "查询指定 Issue 的 Assignees。 List repository issue assignees.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "items": {
+                            "$ref": "#/definitions/git_woa_com_cnb_monorepo_git_internal_app_vcs_service_bff_api.UserInfo"
+                        },
+                        "type": "array"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "PostIssueAssignees",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "添加 Assignees 到指定的 Issue。 Adds up to 10 assignees to an issue. Users already assigned to an issue are not replaced.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "Post Issue Assignees Form",
+                    "in": "body",
+                    "name": "post_issue_assignees_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PostIssueAssigneesForm"
+                    }
+                }
+            ],
+            "responses": {
+                "201": {
+                    "description": "Created",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueDetail"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/assignees/{assignee}": {
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "CanUserBeAssignedToIssue",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "检查用户是否可以被添加到 Issue 的 Assignees 中。 Checks if a user can be assigned to an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "assignee",
+                    "in": "path",
+                    "name": "assignee",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "responses": {
+                "204": {
+                    "description": "No Content"
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/comments": {
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "ListIssueComments",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "查询仓库的 Issue 评论列表。List repository issue comments.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "issue number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "default": 1,
+                    "description": "pagination page number",
+                    "in": "query",
+                    "name": "page",
+                    "type": "integer"
+                },
+                {
+                    "default": 30,
+                    "description": "pagination page size",
+                    "in": "query",
+                    "name": "page_size",
+                    "type": "integer"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "items": {
+                            "$ref": "#/definitions/api.IssueComment"
+                        },
+                        "type": "array"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "PostIssueComment",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "创建一个 Issue Comment。Create an issue comment.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "Post Issue Comment Form",
+                    "in": "body",
+                    "name": "post_issue_comment_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PostIssueCommentForm"
+                    }
+                }
+            ],
+            "responses": {
+                "201": {
+                    "description": "Created",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueComment"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/comments/{comment_id}": {
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "GetIssueComment",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "获取一个 Issue Comment。Get an issue comment.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "comment_id",
+                    "in": "path",
+                    "name": "comment_id",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueComment"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "patch": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "PatchIssueComment",
+            "consumes": null,
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "修改一个 Issue Comment。Update an issue comment.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "comment_id",
+                    "in": "path",
+                    "name": "comment_id",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "Patch Issue Comment Form",
+                    "in": "body",
+                    "name": "patch_issue_comment_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PatchIssueCommentForm"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.IssueComment"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/labels": {
+        "delete": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "DeleteIssueLabels",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "清空 Issue 标签。Remove all labels from an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                }
+            ],
+            "responses": {
+                "204": {
+                    "description": "No Content"
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "get": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:r",
+            "operationId": "ListIssueLabels",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "查询 Issue 的标签(label) 列表。List labels for an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "default": 1,
+                    "description": "pagination page number",
+                    "in": "query",
+                    "name": "page",
+                    "type": "integer"
+                },
+                {
+                    "default": 30,
+                    "description": "pagination page size",
+                    "in": "query",
+                    "name": "page_size",
+                    "type": "integer"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "items": {
+                            "$ref": "#/definitions/api.Label"
+                        },
+                        "type": "array"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "PostIssueLabels",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "新增 Issue 标签。Add labels to an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "Post Issue Labels Form",
+                    "in": "body",
+                    "name": "post_issue_labels_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PostIssueLabelsForm"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.Label"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        },
+        "put": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "PutIssueLabels",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "设置 Issue 标签。 Set the new labels for an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "Put Issue Labels Form",
+                    "in": "body",
+                    "name": "put_issue_labels_form",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/api.PutIssueLabelsForm"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.Label"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/issues/{number}/labels/{name}": {
+        "delete": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-notes:rw",
+            "operationId": "DeleteIssueLabel",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.api+json"
+            ],
+            "tags": [
+                "Issues"
+            ],
+            "summary": "删除 Issue 标签。Remove a label from an issue.",
+            "parameters": [
+                {
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "number",
+                    "in": "path",
+                    "name": "number",
+                    "required": true,
+                    "type": "integer"
+                },
+                {
+                    "description": "label name",
+                    "in": "path",
+                    "name": "name",
+                    "required": true,
+                    "type": "string"
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/api.Label"
+                    }
+                },
+                "404": {
+                    "description": "Not Found",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                },
+                "500": {
+                    "description": "Internal Server Error",
+                    "schema": {
+                        "$ref": "#/definitions/die.WebError"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/upload/files": {
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-contents:rw",
+            "operationId": "UploadFiles",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.web+json"
+            ],
+            "tags": [
+                "Assets"
+            ],
+            "summary": "发起一个上传 files 的请求，返回上传 cos 的 url 和 form 内容。Initiate a request to upload files,returns COS upload URL and form data.",
+            "parameters": [
+                {
+                    "default": "test-group/test-repo",
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "UploadRequestParams",
+                    "in": "body",
+                    "name": "request",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/dto.UploadRequestParams"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/dto.UploadAssetsResponse"
+                    }
+                }
+            }
+        }
+    },
+    "/{repo}/-/upload/imgs": {
+        "post": {
+            "security": [
+                {
+                    "BearerAuth": []
+                }
+            ],
+            "description": "访问令牌调用此接口需包含以下权限。Required permissions for access token. \nrepo-contents:rw",
+            "operationId": "UploadImgs",
+            "consumes": [
+                "application/json"
+            ],
+            "produces": [
+                "application/json",
+                "application/vnd.cnb.web+json"
+            ],
+            "tags": [
+                "Assets"
+            ],
+            "summary": "发起一个上传 imgs 的请求，返回上传 cos 的 url 和 form 内容。发起一个上传 imgs 的请求，返回上传 cos 的 url 和 form 内容.",
+            "parameters": [
+                {
+                    "default": "test-group/test-repo",
+                    "description": "repo",
+                    "in": "path",
+                    "name": "repo",
+                    "required": true,
+                    "type": "string"
+                },
+                {
+                    "description": "UploadRequestParams",
+                    "in": "body",
+                    "name": "request",
+                    "required": true,
+                    "schema": {
+                        "$ref": "#/definitions/dto.UploadRequestParams"
+                    }
+                }
+            ],
+            "responses": {
+                "200": {
+                    "description": "OK",
+                    "schema": {
+                        "$ref": "#/definitions/dto.UploadAssetsResponse"
+                    }
+                }
+            }
+        }
+    },

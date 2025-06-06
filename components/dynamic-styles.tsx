@@ -4,9 +4,12 @@ import { useSettings } from "@/contexts/settings-context"
 import { useEffect } from "react"
 
 export default function DynamicStyles() {
-  const { settings } = useSettings()
+  const { settings, isHydrated } = useSettings()
 
   useEffect(() => {
+    // Only apply custom styles after hydration to prevent mismatch
+    if (!isHydrated) return
+
     // Apply custom CSS variables
     const root = document.documentElement
     root.style.setProperty("--primary-color", settings.primaryColor)
@@ -56,7 +59,7 @@ export default function DynamicStyles() {
         document.head.appendChild(configScript)
       }
     }
-  }, [settings])
+  }, [settings, isHydrated])
 
   return null
 }

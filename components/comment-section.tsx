@@ -8,9 +8,14 @@ import { formatDistanceToNow } from "date-fns"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { postComment } from "@/lib/api-client"
 import type { IssueComment } from "@/types"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/hooks/use-auth"
+import { LogIn, LogOut } from "lucide-react"
 
 interface CommentSectionProps {
   comments: IssueComment[]
@@ -20,13 +25,25 @@ interface CommentSectionProps {
 export default function CommentSection({ comments, articleNumber }: CommentSectionProps) {
   const [commentText, setCommentText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [loginData, setLoginData] = useState({ username: "", password: "" })
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const { authenticated, user, loading, login, logout } = useAuth()
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!commentText.trim()) return
+
+    if (!authenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please login as admin to post comments.",
+        variant: "destructive",
+      })
+      return
+    }
 
     try {
       setIsSubmitting(true)
@@ -50,22 +67,131 @@ export default function CommentSection({ comments, articleNumber }: CommentSecti
     }
   }
 
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoggingIn(true)
+
+    try {
+      const success = await login(loginData.username, loginData.password)
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "You are now logged in as admin.",
+        })
+        setLoginData({ username: "", password: "" })
+      } else {
+        toast({
+          title: "Login failed",
+          description: "Invalid username or password.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Login error",
+        description: "An error occurred during login.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoggingIn(false)
+    }
+  }
+
+  const handleLogout = async () => {
+    await logout()
+    toast({
+      title: "Logged out",
+      description: "You have been logged out.",
+    })
+  }
+
+  if (loading) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    )
+  }
+
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
 
-      <form onSubmit={handleSubmitComment} className="mb-8">
-        <Textarea
-          placeholder="Leave a comment..."
-          value={commentText}
-          onChange={(e) => setCommentText(e.target.value)}
-          className="mb-4 min-h-[100px]"
-        />
-        <Button type="submit" disabled={isSubmitting || !commentText.trim()}>
-          {isSubmitting ? "Posting..." : "Post Comment"}
-        </Button>
-      </form>
+      {/* Authentication Status and Login/Logout */}
+      <div className="mb-6">
+        {authenticated ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Logged in as {user?.username}</span>
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </CardTitle>
+            </CardHeader>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <LogIn className="h-4 w-4 mr-2" />
+                Admin Login Required
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleLogin} className="space-y-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input
+                    id="username"
+                    type="text"
+                    value={loginData.username}
+                    onChange={(e) => setLoginData(prev => ({ ...prev, username: e.target.value }))}
+                    placeholder="Enter admin username"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="password">Password</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    value={loginData.password}
+                    onChange={(e) => setLoginData(prev => ({ ...prev, password: e.target.value }))}
+                    placeholder="Enter admin password"
+                    required
+                  />
+                </div>
+                <Button type="submit" disabled={isLoggingIn}>
+                  {isLoggingIn ? "Logging in..." : "Login"}
+                </Button>
+              </form>
+              <p className="text-sm text-muted-foreground mt-2">
+                Only admin users can post comments.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
+      {/* Comment Form */}
+      {authenticated && (
+        <form onSubmit={handleSubmitComment} className="mb-8">
+          <Textarea
+            placeholder="Leave a comment..."
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            className="mb-4 min-h-[100px]"
+          />
+          <Button type="submit" disabled={isSubmitting || !commentText.trim()}>
+            {isSubmitting ? "Posting..." : "Post Comment"}
+          </Button>
+        </form>
+      )}
+
+      {/* Comments List */}
       <div className="space-y-6">
         {comments.length === 0 ? (
           <p className="text-muted-foreground">No comments yet. Be the first to comment!</p>

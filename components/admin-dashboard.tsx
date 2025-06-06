@@ -14,13 +14,14 @@ import { Plus, Tags, AlertTriangle, Archive, FileEdit, Send } from "lucide-react
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { articleApi, tagApi } from "@/lib/api-unified"
 import { isApiConfigured } from "@/lib/api"
+import SystemStatus from "@/components/system-status"
 import Link from "next/link"
 
 export default function AdminDashboard() {
-  const [publishedArticles, setPublishedArticles] = useState([])
-  const [draftArticles, setDraftArticles] = useState([])
-  const [archivedArticles, setArchivedArticles] = useState([])
-  const [tags, setTags] = useState([])
+  const [publishedArticles, setPublishedArticles] = useState<any[]>([])
+  const [draftArticles, setDraftArticles] = useState<any[]>([])
+  const [archivedArticles, setArchivedArticles] = useState<any[]>([])
+  const [tags, setTags] = useState<any[]>([])
   const [isCreating, setIsCreating] = useState(false)
   const [loading, setLoading] = useState(true)
   const [newArticle, setNewArticle] = useState({
@@ -197,6 +198,11 @@ export default function AdminDashboard() {
             <div className="text-2xl font-bold">{tags.length}</div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* System Status */}
+      <div className="mb-8">
+        <SystemStatus />
       </div>
 
       <Card>

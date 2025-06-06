@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, { params }: { params: { number: 
 
     const response = await fetch(apiUrl, {
       headers: {
-        Authorization: API_TOKEN,
+        Authorization: `Bearer ${API_TOKEN}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },

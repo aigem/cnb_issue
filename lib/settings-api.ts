@@ -1,9 +1,4 @@
 import { type SiteSettings, defaultSettings } from "@/types/settings"
-import { articleApi } from "@/lib/api-unified"
-
-// Special issue number for storing settings
-const SETTINGS_ISSUE_NUMBER = "settings"
-const SETTINGS_LABEL = "site-settings"
 
 export class SettingsApi {
   private static instance: SettingsApi
@@ -11,7 +6,7 @@ export class SettingsApi {
   private lastFetchTime = 0
   private readonly cacheDuration = 5 * 60 * 1000 // 5 minutes
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): SettingsApi {
     if (!SettingsApi.instance) {
@@ -28,48 +23,50 @@ export class SettingsApi {
     }
 
     try {
-      // Try to fetch settings from the special issue
-      const settingsIssue = await articleApi.getArticle(SETTINGS_ISSUE_NUMBER)
+      // Call the file-based settings API
+      const response = await fetch('/api/settings/file', {
+        method: 'GET',
+        credentials: 'include',
+      })
 
-      if (settingsIssue && settingsIssue.body) {
-        try {
-          const settings = JSON.parse(settingsIssue.body) as SiteSettings
-          this.settingsCache = { ...defaultSettings, ...settings }
-          this.lastFetchTime = now
-          return this.settingsCache
-        } catch (e) {
-          console.error("Failed to parse settings JSON:", e)
-        }
+      if (response.ok) {
+        const settings = await response.json() as SiteSettings
+        this.settingsCache = { ...defaultSettings, ...settings }
+        this.lastFetchTime = now
+        return this.settingsCache
+      } else {
+        console.warn("Failed to load settings from file, using defaults")
       }
     } catch (error) {
       console.error("Error fetching settings:", error)
     }
 
     // Return default settings if we couldn't fetch or parse
+    this.settingsCache = defaultSettings
+    this.lastFetchTime = now
     return defaultSettings
   }
 
   async saveSettings(settings: SiteSettings): Promise<boolean> {
     try {
-      const settingsJson = JSON.stringify(settings, null, 2)
+      const response = await fetch('/api/settings/file', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+        credentials: 'include',
+      })
 
-      // Check if settings issue exists
-      const existingSettings = await articleApi.getArticle(SETTINGS_ISSUE_NUMBER)
-
-      if (existingSettings) {
-        // Update existing settings issue
-        await articleApi.updateArticle(SETTINGS_ISSUE_NUMBER, {
-          body: settingsJson,
-        })
+      if (response.ok) {
+        // Update cache
+        this.settingsCache = settings
+        this.lastFetchTime = Date.now()
+        return true
       } else {
-        // Create new settings issue
-        await articleApi.createArticle("Site Settings", settingsJson, [SETTINGS_LABEL])
+        console.error("Failed to save settings to file")
+        return false
       }
-
-      // Update cache
-      this.settingsCache = settings
-      this.lastFetchTime = Date.now()
-      return true
     } catch (error) {
       console.error("Error saving settings:", error)
       return false

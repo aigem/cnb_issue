@@ -17,7 +17,7 @@ export async function GET() {
     console.log(`[Tags API] Fetching articles to extract tags`)
     const response = await fetch(`${API_BASE_URL}/${REPO_NAME}/-/issues?page=1&page_size=100&state=open`, {
       headers: {
-        Authorization: API_TOKEN,
+        Authorization: `Bearer ${API_TOKEN}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },

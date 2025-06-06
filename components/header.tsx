@@ -14,7 +14,14 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const pathname = usePathname()
-  const { settings } = useSettings()
+  const { settings, isHydrated } = useSettings()
+
+  // Use default values during hydration to prevent mismatch
+  const displaySettings = isHydrated ? settings : {
+    siteName: "Modern Blog",
+    logoUrl: "/logo.svg",
+    customHeaderHtml: "",
+  }
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
 
@@ -43,14 +50,14 @@ export default function Header() {
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
           <Link href="/" className="flex items-center space-x-2">
-            {settings.logoUrl && (
+            {displaySettings.logoUrl && (
               <img
-                src={settings.logoUrl || "/placeholder.svg"}
-                alt={settings.siteName}
+                src={displaySettings.logoUrl || "/placeholder.svg"}
+                alt={displaySettings.siteName}
                 className="h-8 w-8 object-contain"
               />
             )}
-            <span className="font-bold text-xl">{settings.siteName}</span>
+            <span className="font-bold text-xl">{displaySettings.siteName}</span>
           </Link>
         </div>
 
@@ -59,9 +66,8 @@ export default function Header() {
             <Link
               key={item.path}
               href={item.path}
-              className={`text-sm font-medium transition-colors hover:text-primary ${
-                pathname === item.path ? "text-primary" : "text-muted-foreground"
-              }`}
+              className={`text-sm font-medium transition-colors hover:text-primary ${pathname === item.path ? "text-primary" : "text-muted-foreground"
+                }`}
             >
               {item.name}
             </Link>
@@ -69,9 +75,8 @@ export default function Header() {
           {hasAdminAccess && (
             <Link
               href="/admin"
-              className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${
-                pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
-              }`}
+              className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-1 ${pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+                }`}
             >
               <Shield className="h-4 w-4" />
               Admin
@@ -113,9 +118,8 @@ export default function Header() {
               <Link
                 key={item.path}
                 href={item.path}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  pathname === item.path ? "text-primary" : "text-muted-foreground"
-                }`}
+                className={`text-sm font-medium transition-colors hover:text-primary ${pathname === item.path ? "text-primary" : "text-muted-foreground"
+                  }`}
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.name}
@@ -125,9 +129,8 @@ export default function Header() {
               <>
                 <Link
                   href="/admin"
-                  className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-2 ${
-                    pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
-                  }`}
+                  className={`text-sm font-medium transition-colors hover:text-primary flex items-center gap-2 ${pathname.startsWith("/admin") ? "text-primary" : "text-muted-foreground"
+                    }`}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <Shield className="h-4 w-4" />
@@ -161,7 +164,7 @@ export default function Header() {
       )}
 
       {/* Custom Header HTML */}
-      {settings.customHeaderHtml && <div dangerouslySetInnerHTML={{ __html: settings.customHeaderHtml }} />}
+      {displaySettings.customHeaderHtml && <div dangerouslySetInnerHTML={{ __html: displaySettings.customHeaderHtml }} />}
     </header>
   )
 }

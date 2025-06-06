@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     // Test API connection
     const response = await fetch(testUrl, {
       headers: {
-        Authorization: API_TOKEN,
+        Authorization: `Bearer ${API_TOKEN}`,
         "Content-Type": "application/json",
         Accept: "application/json",
       },
