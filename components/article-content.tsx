@@ -1,36 +1,29 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useMemo, useCallback } from "react"
 import { useTheme } from "next-themes"
-import Prism from "prismjs"
-import "prismjs/components/prism-javascript"
-import "prismjs/components/prism-typescript"
-import "prismjs/components/prism-jsx"
-import "prismjs/components/prism-tsx"
-import "prismjs/components/prism-css"
-import "prismjs/components/prism-json"
-import "prismjs/components/prism-markdown"
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import rehypeHighlight from 'rehype-highlight'
+import rehypeRaw from 'rehype-raw'
+import 'highlight.js/styles/github.css'
+import 'highlight.js/styles/github-dark.css'
 
 interface ArticleContentProps {
   content: string
 }
 
+// 常量配置
+const AVERAGE_READING_SPEED = 200 // 每分钟单词数
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || ""
+const REPO_NAME = process.env.NEXT_PUBLIC_REPO_NAME || "blog"
+
 export default function ArticleContent({ content }: ArticleContentProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const { theme } = useTheme()
 
-  useEffect(() => {
-    if (contentRef.current) {
-      // Process images in the content
-      processImages(contentRef.current)
-
-      // Highlight code blocks
-      Prism.highlightAllUnder(contentRef.current)
-    }
-  }, [content, theme])
-
-  // Function to process and fix image URLs
-  const processImages = (container: HTMLElement) => {
+  // 优化的图片处理函数
+  const processImages = useCallback((container: HTMLElement) => {
     const images = container.querySelectorAll("img")
     images.forEach((img) => {
       // Add error handling for images
@@ -52,38 +45,80 @@ export default function ArticleContent({ content }: ArticleContentProps) {
       img.style.maxWidth = "100%"
       img.style.height = "auto"
     })
-  }
+  }, [])
 
-  // Process content to fix image URLs and add proper markdown rendering
-  const processedContent = content
-    // Fix relative image URLs to absolute URLs
-    .replace(/!\[([^\]]*)\]$$(?!https?:\/\/)([^)]+)$$/g, (match, alt, src) => {
-      // If it's a relative URL starting with /-/imgs/, make it absolute
-      if (src.startsWith("/-/imgs/")) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || ""
-        const repoName = process.env.NEXT_PUBLIC_REPO_NAME || "blog"
-        return `![${alt}](${baseUrl}/${repoName}${src})`
-      }
-      return match
-    })
-    // Fix any other relative URLs
-    .replace(/!\[([^\]]*)\]$$\/([^)]+)$$/g, (match, alt, src) => {
-      const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || ""
-      return `![${alt}](${baseUrl}/${src})`
-    })
+  // 使用useEffect处理图片，添加依赖优化
+  useEffect(() => {
+    if (contentRef.current) {
+      processImages(contentRef.current)
+    }
+  }, [content, theme, processImages])
 
-  // Calculate reading time
-  const readingTime = Math.max(1, Math.ceil(processedContent.split(/\s+/).length / 200))
+  // Memoized计算阅读时间
+  const readingTime = useMemo(() => {
+    const wordCount = content.split(/\s+/).length
+    return Math.max(1, Math.ceil(wordCount / AVERAGE_READING_SPEED))
+  }, [content])
+
+  // Memoized检查内容类型
+  const isMarkdown = useMemo(() => {
+    return !content.includes('<') || content.includes('```') || content.includes('#')
+  }, [content])
+
+  // Memoized的图片URL修复函数
+  const fixImageUrl = useCallback((src: string | undefined) => {
+    if (!src || src.startsWith('http')) return src
+
+    if (src.startsWith("/-/imgs/")) {
+      return `${BASE_URL}/${REPO_NAME}${src}`
+    } else if (src.startsWith("/")) {
+      return `${BASE_URL}${src}`
+    }
+    return src
+  }, [])
+
+  // Memoized的Markdown组件配置
+  const markdownComponents = useMemo(() => ({
+    img: ({ src, alt, ...props }: any) => {
+      const fixedSrc = fixImageUrl(src)
+      return (
+        <img
+          {...props}
+          src={fixedSrc}
+          alt={alt}
+          style={{
+            maxWidth: '100%',
+            height: 'auto',
+            borderRadius: '0.5rem',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            margin: '1.5rem 0'
+          }}
+          onError={(e) => {
+            console.warn(`Failed to load image: ${fixedSrc}`)
+            e.currentTarget.style.display = 'none'
+          }}
+        />
+      )
+    }
+  }), [fixImageUrl])
 
   return (
     <div className="article-content">
       <div className="text-sm text-muted-foreground mb-6">{readingTime} min read</div>
 
-      <div
-        ref={contentRef}
-        className="prose prose-lg dark:prose-invert max-w-none"
-        dangerouslySetInnerHTML={{ __html: processedContent }}
-      />
+      <div ref={contentRef} className="prose prose-lg dark:prose-invert max-w-none">
+        {isMarkdown ? (
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight, rehypeRaw]}
+            components={markdownComponents}
+          >
+            {content}
+          </ReactMarkdown>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: content }} />
+        )}
+      </div>
 
       <style jsx global>{`
         .article-content img {

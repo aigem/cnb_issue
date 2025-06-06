@@ -21,9 +21,9 @@ export default function ArticleList({ articles }: ArticleListProps) {
   }
 
   return (
-    <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
       {articles.map((article) => (
-        <Card key={article.number} className="flex flex-col h-full">
+        <Card key={article.number} className="flex flex-col h-full shadow-modern hover:shadow-modern-lg">
           <CardHeader>
             <Link href={`/articles/${article.number}`}>
               <CardTitle className="line-clamp-2 hover:underline cursor-pointer">{article.title}</CardTitle>

@@ -23,6 +23,13 @@ interface CommentSectionProps {
 }
 
 export default function CommentSection({ comments, articleNumber }: CommentSectionProps) {
+  // Get repo info from environment
+  const repoName = process.env.NEXT_PUBLIC_REPO_NAME || 'cnb.ai/testblog'
+
+  // Get original article URL
+  const getOriginalUrl = () => {
+    return `https://cnb.cool/${repoName}/-/issues/${articleNumber}`
+  }
   const [commentText, setCommentText] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loginData, setLoginData] = useState({ username: "", password: "" })
@@ -117,6 +124,22 @@ export default function CommentSection({ comments, articleNumber }: CommentSecti
   return (
     <div>
       <h2 className="text-2xl font-bold mb-6">Comments ({comments.length})</h2>
+
+      {/* Comment Notice */}
+      <div className="mb-6 p-4 bg-muted/50 border rounded-lg">
+        <p className="text-sm text-muted-foreground">
+          如果你想要评论，请到{' '}
+          <a
+            href={getOriginalUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline font-medium"
+          >
+            原文
+          </a>
+          {' '}中发布。
+        </p>
+      </div>
 
       {/* Authentication Status and Login/Logout */}
       <div className="mb-6">

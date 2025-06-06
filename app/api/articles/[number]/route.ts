@@ -5,14 +5,15 @@ const API_TOKEN = process.env.API_TOKEN
 const REPO_NAME = process.env.NEXT_PUBLIC_REPO_NAME || "blog"
 
 export async function GET(request: NextRequest, { params }: { params: { number: string } }) {
-  console.log(`[Article Detail] Route called for article ${params.number}`)
+  const resolvedParams = await params
+  console.log(`[Article Detail] Route called for article ${resolvedParams.number}`)
 
   try {
     if (!API_BASE_URL || !API_TOKEN) {
       return NextResponse.json({ error: "API configuration missing" }, { status: 500 })
     }
 
-    const apiUrl = `${API_BASE_URL}/${REPO_NAME}/-/issues/${params.number}`
+    const apiUrl = `${API_BASE_URL}/${REPO_NAME}/-/issues/${resolvedParams.number}`
     console.log(`[Article Detail] Fetching from: ${apiUrl}`)
 
     const response = await fetch(apiUrl, {
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: { number: 
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error(`[Article Detail] Error fetching article ${params.number}:`, error)
+    console.error(`[Article Detail] Error fetching article ${resolvedParams.number}:`, error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

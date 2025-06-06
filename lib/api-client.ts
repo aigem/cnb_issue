@@ -1,5 +1,18 @@
 import type { Issue, IssueDetail, IssueComment } from "@/types"
 
+// 简化的参数构建函数
+const buildSearchParams = (params: Record<string, any>): URLSearchParams => {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, value.toString())
+    }
+  })
+
+  return searchParams
+}
+
 // 客户端 API 调用函数
 export async function fetchArticles(
   params: {
@@ -14,50 +27,38 @@ export async function fetchArticles(
     orderBy?: string
   } = {},
 ): Promise<Issue[]> {
-  const searchParams = new URLSearchParams()
-
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      searchParams.append(key, value.toString())
-    }
-  })
-
   try {
-    console.log(`[fetchArticles] Calling API with params:`, params)
+    const searchParams = buildSearchParams(params)
     const apiUrl = `/api/articles/list?${searchParams.toString()}`
-    console.log(`[fetchArticles] API URL: ${apiUrl}`)
+
+    console.log(`[fetchArticles] Fetching from: ${apiUrl}`)
 
     const response = await fetch(apiUrl)
-    console.log(`[fetchArticles] Response status: ${response.status}`)
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-      console.error(`[fetchArticles] API Error:`, errorData)
-
-      // Don't throw error for 404, just return empty array
       if (response.status === 404) {
-        console.log(`[fetchArticles] No articles found, returning empty array`)
+        console.log(`[fetchArticles] No articles found`)
         return []
       }
 
-      throw new Error(errorData.error || `Failed to fetch articles: ${response.status}`)
+      const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+      console.error(`[fetchArticles] API Error:`, errorData)
+      return []
     }
 
     const data = await response.json()
-    console.log(`[fetchArticles] Received data:`, data)
 
-    // 确保返回的是数组
+    // 验证数据格式
     if (!Array.isArray(data)) {
-      console.warn("[fetchArticles] API did not return an array:", data)
+      console.warn("[fetchArticles] Invalid data format, expected array")
       return []
     }
 
     console.log(`[fetchArticles] Successfully fetched ${data.length} articles`)
     return data
   } catch (error) {
-    console.error("Error in fetchArticles:", error)
-    // Don't re-throw the error, return empty array instead
-    return []
+    console.error("[fetchArticles] Error:", error)
+    return [] // 失败后返回空数组，不影响UI
   }
 }
 

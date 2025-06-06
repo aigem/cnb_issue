@@ -47,7 +47,7 @@ export default function ArticlePage() {
         setComments(commentsData)
       } catch (err) {
         console.error("Error loading article:", err)
-        setError(err.message)
+        setError(err instanceof Error ? err.message : 'Failed to load article')
       } finally {
         setLoading(false)
       }
@@ -108,6 +108,24 @@ export default function ArticlePage() {
               <MessageSquare className="mr-1 h-4 w-4" />
               <span>{comments.length} comments</span>
             </div>
+
+            {article.priority && (
+              <div className="flex items-center">
+                <span className="mr-1">🔴</span>
+                <span className="text-sm">
+                  优先级: {article.priority.toUpperCase()}
+                </span>
+              </div>
+            )}
+
+            {article.assignees && article.assignees.length > 0 && (
+              <div className="flex items-center">
+                <span className="mr-1">👤</span>
+                <span className="text-sm">
+                  指派: {article.assignees.map((assignee: any) => assignee.nickname || assignee.username).join(', ')}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8">
